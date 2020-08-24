@@ -58,6 +58,21 @@ void setupMidi() {
   sei();//allow interrupts
 }
 
+void setupAnalogOut() {
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+
+  analogWrite(9, 0);
+  analogWrite(10, 0);
+
+  TCCR1B = 0x09;
+}
+
+void AnalogWrite(byte level){
+  OCR1AL = level;
+  OCR1BL = level;
+}
+
 char currentNote[kNumPeriods];
 
 void handleNoteEvent(char channel, char note, char velocity) {
