@@ -15,6 +15,7 @@ void setPulseFromNoteNumber(int voice, int noteNumber) {
 }
 
 void setupVoices() {
+  // Note: D13 is equal to LED_BUILTIN, so the LED will illuminate when this voice is playing
   pins[0] = 13;
   pins[1] = 12;
   pins[2] = 11;
@@ -82,7 +83,7 @@ void handleNoteEvent(char channel, char note, char velocity) {
 }
 
 // Override the ISR for the serial interface
-ISR(TIMER2_COMPA_vect) {//checks for incoming midi every 128us
+ISR(TIMER2_COMPA_vect) {
   while (Serial.available() >= 3) {
     // Note on and off messages are three bytes.
     char commandByte = Serial.read();//read first byte
@@ -115,6 +116,10 @@ ISR(TIMER2_COMPA_vect) {//checks for incoming midi every 128us
       case 0xf0: // Sysex and other similar messages
         switch (commandByte) {
           case 0xf0:  // Sysex
+            // Serial.read() will return -1 if nothing is available.  So, this
+            // code is going to block until the Sysex message is complete.  
+            // That means that Sysex messages will probably cause a noticable blip
+            // for the oscilator.
             while(Serial.read() != 0xf7) {}
             break;
           case 0xf1:  // MIDI time code quarter frame
@@ -137,6 +142,7 @@ ISR(TIMER2_COMPA_vect) {//checks for incoming midi every 128us
 void setup() {
   setupVoices();
   setupMidi();
+  Serial.print("Setup done.");
 }
 
 void sendVoices() {
@@ -158,14 +164,10 @@ void sendVoices() {
   }
 }
 
-void readMidi() {
-  
-}
-
 
 // This code does not handle integer overflow correctly
 // so every 1.2 hours there will be a little pop.
 void loop() {
-  readMidi();
   sendVoices();
+  // MIDI is handled by IRC
 }
