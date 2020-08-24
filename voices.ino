@@ -4,6 +4,7 @@ unsigned long halfPeriod[kNumPeriods];
 unsigned long nextTrigger[kNumPeriods];
 int pins[kNumPeriods];
 bool lastValue[kNumPeriods];
+unsigned char currentNote[kNumPeriods];
 
 void setPulseFromNoteNumber(int voice, int noteNumber) {
   float h = (noteNumber - 69.0)/12.0;
@@ -15,15 +16,18 @@ void setPulseFromNoteNumber(int voice, int noteNumber) {
 }
 
 void setupVoices() {
-  // Note: D13 is equal to LED_BUILTIN, so the LED will illuminate when this voice is playing
-  pins[0] = 13;
-  pins[1] = 12;
-  pins[2] = 11;
-  pins[3] = 10;
-  pins[4] = 9;
-  pins[5] = 8;
+  pinMode(LED_BUILTIN, OUTPUT);  // AKA D13
+  digitalWrite(LED_BUILTIN, LOW);
+
+  pins[0] = 12;
+  pins[1] = 11;
+  pins[2] = 10;
+  pins[3] = 9;
+  pins[4] = 8;
+  pins[5] = 7;
   
   for (int i=0; i<kNumPeriods; ++i) {
+    currentNote[i] = 0;
     halfPeriod[i] = 0;
     pinMode(pins[i], OUTPUT);
     lastValue[i] = 0;
@@ -59,17 +63,16 @@ void setupMidi() {
   sei();//allow interrupts
 }
 
-char currentNote[kNumPeriods];
-
-void handleNoteEvent(char channel, char note, char velocity) {
+void handleNoteEvent(unsigned char channel, unsigned char note, unsigned char velocity) {
   if (channel != 0) {
     // Only handle MIDI channel 1.
     return;
   }
   int match = -1;
   for (int i = 0; i<kNumPeriods; ++i) {
-    if (currentNote[i] == note || halfPeriod[i] == 0) {
+    if (currentNote[i] == note || currentNote[i] == 0) {
       match = i;
+      digitalWrite(LED_BUILTIN, HIGH);
       break;
     }
   }
@@ -86,14 +89,16 @@ void handleNoteEvent(char channel, char note, char velocity) {
 ISR(TIMER2_COMPA_vect) {
   while (Serial.available() >= 3) {
     // Note on and off messages are three bytes.
-    char commandByte = Serial.read();//read first byte
-    char command = commandByte & 0xf0;
-    char channel = commandByte & 0x0f;
+    unsigned char commandByte = Serial.read();//read first byte
+    unsigned char command = commandByte & 0xf0;
+    unsigned char channel = commandByte & 0x0f;
+    unsigned char noteByte = 0;
+    unsigned char velocityByte = 0;
     switch (command) {
       case 0x80: // Note OFF
       case 0x90: // Note ON
-        char noteByte = Serial.read();
-        char velocityByte = Serial.read();
+        noteByte = Serial.read();
+        velocityByte = Serial.read();
         if (command == 0x80) {
           // Note off can also be coded as a note on with velocity zero.
           // So, if we get a note-off event, we just treat this as a note-on with velocity zero
