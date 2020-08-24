@@ -58,6 +58,7 @@ void setupMidi() {
   sei();//allow interrupts
 }
 
+// add to setup() if using Fast PWM for pins 9 and 10. 
 void setupAnalogOut() {
   pinMode(9, OUTPUT);
   pinMode(10, OUTPUT);
@@ -68,6 +69,7 @@ void setupAnalogOut() {
   TCCR1B = 0x09;
 }
 
+// writes a byte to the Fast PWM channels (9 and 10)
 void AnalogWrite(byte level){
   OCR1AL = level;
   OCR1BL = level;
