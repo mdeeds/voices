@@ -74,19 +74,20 @@ void handleNoteEvent(byte channel, byte note, byte velocity) {
     // Only handle MIDI channel 1.
     return;
   }
-  int match = -1;
-  for (int i = 0; i<kNumPeriods; ++i) {
-    if (currentNote[i] == note || currentNote[i] == 0) {
-      match = i;
-      break;
+  if (velocity == 0) {
+    for (int i = 0; i<kNumPeriods; ++i) {
+      if (currentNote[i] == note) {
+        halfPeriod[i] = 0;
+        currentNote[i] = 0;
+        break;
+      }
     }
-  }
-  if (match >= 0) {
-    if (velocity > 0) {
-      setPulseFromNoteNumber(match, note);
-    } else {
-      halfPeriod[match] = 0;
-      currentNote[match] = 0;
+  } else {
+    for (int i = 0; i < kNumPeriods; ++i) {
+      if (currentNote[i] == note || currentNote[i] == 0) {
+        setPulseFromNoteNumber(i, note);
+        break;
+      }
     }
   }
 }
