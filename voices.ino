@@ -65,9 +65,13 @@ void setupAnalogOut() {
   TCCR1B = 0x09;
 }
 
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+
 // writes a byte to the Fast PWM channels (9 and 10)
 void setAnalogLevel(byte level){
+  sbi(TCCR1A, COM1A1);
   OCR1AL = level;
+  sbi(TCCR1A, COM1B1);
   OCR1BL = level;
 }
 
@@ -80,7 +84,6 @@ void handleNoteEvent(byte channel, byte note, byte velocity) {
   for (int i = 0; i<kNumPeriods; ++i) {
     if (currentNote[i] == note || currentNote[i] == 0) {
       match = i;
-      digitalWrite(LED_BUILTIN, HIGH);
       break;
     }
   }
@@ -161,7 +164,7 @@ void setup() {
 void sendVoices() {
   unsigned long nowClock = micros();
   byte sum = 0;
-  for (int i=0; i<kNumPeriods; ++i) {
+  for (int i = 0; i < kNumPeriods; ++i) {
     if (halfPeriod[i] == 0) {
       continue;
     }
@@ -176,9 +179,11 @@ void sendVoices() {
       }
     }
   }
+  if (sum < 128) {
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
   setAnalogLevel(sum);
 }
-
 
 // This code does not handle integer overflow correctly
 // so every 1.2 hours there will be a little pop.
