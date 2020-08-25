@@ -92,13 +92,20 @@ void handleNoteEvent(byte channel, byte note, byte velocity) {
   }
 }
 
+int serialThru() {
+  int value = Serial.read();
+  Serial.write(value);
+  return value;
+}
+
+
 // Notes hang sometimes.  What could be happening is that the ISR code is being
 // interrupted, so we lose one of the "NOTE OFF" events.
 // Override the ISR for the serial interface
 ISR(TIMER2_COMPA_vect) {
   while (Serial.available() >= 3) {
     // Note on and off messages are three bytes.
-    byte commandByte = Serial.read();//read first byte
+    byte commandByte = serialThru();//read first byte
     byte command = commandByte & 0xf0;
     byte channel = commandByte & 0x0f;
     byte noteByte = 0;
@@ -106,8 +113,8 @@ ISR(TIMER2_COMPA_vect) {
     switch (command) {
       case 0x80: // Note OFF
       case 0x90: // Note ON
-        noteByte = Serial.read();
-        velocityByte = Serial.read();
+        noteByte = serialThru();
+        velocityByte = serialThru();
         if (command == 0x80) {
           // Note off can also be coded as a note on with velocity zero.
           // So, if we get a note-off event, we just treat this as a note-on with velocity zero
@@ -119,13 +126,13 @@ ISR(TIMER2_COMPA_vect) {
       case 0xa0: // Polyohonic aftertouch
       case 0xb0: // Control change
       case 0xe0: // Pitch bend
-        Serial.read();
-        Serial.read();
+        serialThru();
+        serialThru();
       break;
       // Two-byte messages - Not implemented
       case 0xc0:  // Program Change
       case 0xd0:  // Channel aftertouch
-        Serial.read();
+        serialThru();
       break;
       case 0xf0: // Sysex and other similar messages
         switch (commandByte) {
@@ -134,15 +141,15 @@ ISR(TIMER2_COMPA_vect) {
             // code is going to block until the Sysex message is complete.  
             // That means that Sysex messages will probably cause a noticable blip
             // for the oscilator.
-            while(Serial.read() != 0xf7) {}
+            while(serialThru() != 0xf7) {}
             break;
           case 0xf1:  // MIDI time code quarter frame
           case 0xf3: // Song select
-            Serial.read();
+            serialThru();
             break;
           case 0xf2: // Song Position
-            Serial.read();
-            Serial.read();
+            serialThru();
+            serialThru();
             break;
           default:
             // Remaining messages are all single-byte.
