@@ -2,7 +2,6 @@ const int kNumPeriods=6;
 
 unsigned long halfPeriod[kNumPeriods];
 unsigned long nextTrigger[kNumPeriods];
-int pins[kNumPeriods];
 bool lastValue[kNumPeriods];
 unsigned char currentNote[kNumPeriods];
 
@@ -18,20 +17,11 @@ void setPulseFromNoteNumber(int voice, int noteNumber) {
 void setupVoices() {
   pinMode(LED_BUILTIN, OUTPUT);  // AKA D13
   digitalWrite(LED_BUILTIN, LOW);
-
-  pins[0] = 12;
-  pins[1] = 11;
-  pins[2] = 10;
-  pins[3] = 9;
-  pins[4] = 8;
-  pins[5] = 7;
   
   for (int i=0; i<kNumPeriods; ++i) {
     currentNote[i] = 0;
     halfPeriod[i] = 0;
-    pinMode(pins[i], OUTPUT);
     lastValue[i] = 0;
-    digitalWrite(pins[i], LOW);
   }
 
   setPulseFromNoteNumber(0, 60);  // C
@@ -70,11 +60,13 @@ void setupAnalogOut() {
   analogWrite(9, 0);
   analogWrite (10, 0);
 
+  // Set PWM to fast mode.  Do not call analogWrite
+  // or it will override this setting.
   TCCR1B = 0x09;
 }
 
 // writes a byte to the Fast PWM channels (9 and 10)
-void AnalogWrite(byte level){
+void setAnalogLevel(byte level){
   OCR1AL = level;
   OCR1BL = level;
 }
@@ -168,21 +160,23 @@ void setup() {
 
 void sendVoices() {
   unsigned long nowClock = micros();
+  byte sum = 0;
   for (int i=0; i<kNumPeriods; ++i) {
     if (halfPeriod[i] == 0) {
       continue;
     }
+    byte v = lastValue[i];
+    sum += v << 5;
     if (nowClock >= nextTrigger[i]) {
       nextTrigger[i] += halfPeriod[i]; 
-      if (!lastValue[i]) {
-        digitalWrite(pins[i], HIGH);
+      if (!v) {
         lastValue[i] = 1;
       } else {
-        digitalWrite(pins[i], LOW);
         lastValue[i] = 0;
       }
     }
   }
+  setAnalogLevel(sum);
 }
 
 
