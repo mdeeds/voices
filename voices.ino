@@ -23,13 +23,6 @@ void setupVoices() {
     halfPeriod[i] = 0;
     lastValue[i] = 0;
   }
-
-  setPulseFromNoteNumber(0, 60);  // C
-  setPulseFromNoteNumber(1, 64);  // E
-  setPulseFromNoteNumber(2, 67);  // G
-  setPulseFromNoteNumber(3, 70);  // Bb
-  setPulseFromNoteNumber(4, 52);  // E
-  setPulseFromNoteNumber(5, 48);  // C
 }
 
 // Mostly copied from https://www.instructables.com/id/Send-and-Receive-MIDI-with-Arduino/
@@ -88,6 +81,7 @@ void handleNoteEvent(byte channel, byte note, byte velocity) {
     }
   }
   if (match >= 0) {
+    digitalWrite(LED_BUILTIN, HIGH);
     if (velocity > 0) {
       setPulseFromNoteNumber(match, note);
     } else {
@@ -178,9 +172,6 @@ void sendVoices() {
         lastValue[i] = 0;
       }
     }
-  }
-  if (sum < 128) {
-    digitalWrite(LED_BUILTIN, HIGH);
   }
   setAnalogLevel(sum);
 }
