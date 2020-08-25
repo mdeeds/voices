@@ -12,6 +12,7 @@ void setPulseFromNoteNumber(int voice, int noteNumber) {
   unsigned long periodMicros = (unsigned long)(1000000 * periodS);
   halfPeriod[voice] = periodMicros / 2;
   nextTrigger[voice] = micros() + periodMicros / 2;
+  currentNote[voice] = noteNumber;
 }
 
 void setupVoices() {
@@ -81,15 +82,17 @@ void handleNoteEvent(byte channel, byte note, byte velocity) {
     }
   }
   if (match >= 0) {
-    digitalWrite(LED_BUILTIN, HIGH);
     if (velocity > 0) {
       setPulseFromNoteNumber(match, note);
     } else {
       halfPeriod[match] = 0;
+      currentNote[match] = 0;
     }
   }
 }
 
+// Notes hang sometimes.  What could be happening is that the ISR code is being
+// interrupted, so we lose one of the "NOTE OFF" events.
 // Override the ISR for the serial interface
 ISR(TIMER2_COMPA_vect) {
   while (Serial.available() >= 3) {
