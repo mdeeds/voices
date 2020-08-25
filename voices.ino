@@ -45,7 +45,7 @@ void setupVoices() {
 // Mostly copied from https://www.instructables.com/id/Send-and-Receive-MIDI-with-Arduino/
 void setupMidi() {
   Serial.begin(31250);
-   cli();//stop interrupts
+  cli();  //stop interrupts
 
   //set timer2 interrupt every 128us
   TCCR2A = 0;// set entire TCCR2A register to 0
@@ -60,10 +60,26 @@ void setupMidi() {
   // enable timer compare interrupt
   TIMSK2 |= (1 << OCIE2A);
   
-  sei();//allow interrupts
+  sei();  //allow interrupts
 }
 
-void handleNoteEvent(unsigned char channel, unsigned char note, unsigned char velocity) {
+void setupAnalogOut() {
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+
+  analogWrite(9, 0);
+  analogWrite (10, 0);
+
+  TCCR1B = 0x09;
+}
+
+// writes a byte to the Fast PWM channels (9 and 10)
+void AnalogWrite(byte level){
+  OCR1AL = level;
+  OCR1BL = level;
+}
+
+void handleNoteEvent(byte channel, byte note, byte velocity) {
   if (channel != 0) {
     // Only handle MIDI channel 1.
     return;
@@ -89,11 +105,11 @@ void handleNoteEvent(unsigned char channel, unsigned char note, unsigned char ve
 ISR(TIMER2_COMPA_vect) {
   while (Serial.available() >= 3) {
     // Note on and off messages are three bytes.
-    unsigned char commandByte = Serial.read();//read first byte
-    unsigned char command = commandByte & 0xf0;
-    unsigned char channel = commandByte & 0x0f;
-    unsigned char noteByte = 0;
-    unsigned char velocityByte = 0;
+    byte commandByte = Serial.read();//read first byte
+    byte command = commandByte & 0xf0;
+    byte channel = commandByte & 0x0f;
+    byte noteByte = 0;
+    byte velocityByte = 0;
     switch (command) {
       case 0x80: // Note OFF
       case 0x90: // Note ON
@@ -147,7 +163,7 @@ ISR(TIMER2_COMPA_vect) {
 void setup() {
   setupVoices();
   setupMidi();
-  Serial.print("Setup done.");
+  setupAnalogOut();
 }
 
 void sendVoices() {
