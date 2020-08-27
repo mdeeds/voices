@@ -1,9 +1,14 @@
 const int kNumPeriods=6;
 
+#define kUlongMax 0xffffffffUL;
+
+unsigned long releaseUs = 500000; // Half a second.
+
 unsigned long halfPeriod[kNumPeriods];
 unsigned long nextTrigger[kNumPeriods];
 bool lastValue[kNumPeriods];
 unsigned char currentNote[kNumPeriods];
+unsigned long releaseTimeUs[kNumPeriods];
 
 void setPulseFromNoteNumber(int voice, int noteNumber) {
   float h = (noteNumber - 69.0)/12.0;
@@ -23,6 +28,7 @@ void setupVoices() {
     currentNote[i] = 0;
     halfPeriod[i] = 0;
     lastValue[i] = 0;
+    releaseTimeUs[i] = kUlongMax;
   }
 }
 
@@ -77,8 +83,7 @@ void handleNoteEvent(byte channel, byte note, byte velocity) {
   if (velocity == 0) {
     for (int i = 0; i<kNumPeriods; ++i) {
       if (currentNote[i] == note) {
-        halfPeriod[i] = 0;
-        currentNote[i] = 0;
+        releaseTimeUs[i] = micros() + releaseUs;
         break;
       }
     }
@@ -98,9 +103,6 @@ int serialThru() {
   return value;
 }
 
-
-// Notes hang sometimes.  What could be happening is that the ISR code is being
-// interrupted, so we lose one of the "NOTE OFF" events.
 // Override the ISR for the serial interface
 ISR(TIMER2_COMPA_vect) {
   while (Serial.available() >= 3) {
@@ -171,6 +173,12 @@ void sendVoices() {
   byte sum = 0;
   for (int i = 0; i < kNumPeriods; ++i) {
     if (halfPeriod[i] == 0) {
+      continue;
+    }
+    if (releaseTimeUs[i] <= nowClock) {
+      halfPeriod[i] = 0;
+      currentNote[i] = 0;
+      releaseTimeUs[i] = kUlongMax;
       continue;
     }
     byte v = lastValue[i];
