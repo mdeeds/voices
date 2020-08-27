@@ -2,6 +2,9 @@ const int kNumPeriods=6;
 
 #define kUlongMax 0xffffffffUL;
 
+unsigned long attackUs = 10000; // 0.010 seconds
+unsigned long decayUs = 10000;  // 0.010 seconds
+byte sustain = 255;
 unsigned long releaseUs = 500000; // Half a second.
 
 unsigned long halfPeriod[kNumPeriods];
@@ -10,8 +13,9 @@ bool lastValue[kNumPeriods];
 unsigned char currentNote[kNumPeriods];
 unsigned long releaseTimeUs[kNumPeriods];
 byte voiceMaxAmplitude = 255 / kNumPeriods;
+byte voiceLevel[kNumPeriods];
 
-void setPulseFromNoteNumber(int voice, int noteNumber) {
+void setPulseFromNoteNumber(int voice, int noteNumber, byte velocity) {
   float h = (noteNumber - 69.0)/12.0;
   float freqHz = pow(2.0, h) * 440.0;
   float periodS = 1.0 / freqHz;
@@ -19,6 +23,7 @@ void setPulseFromNoteNumber(int voice, int noteNumber) {
   halfPeriod[voice] = periodMicros / 2;
   nextTrigger[voice] = micros() + periodMicros / 2;
   currentNote[voice] = noteNumber;
+  voiceLevel[voice] = ((int)voiceMaxAmplitude) * velocity / 127; 
 }
 
 void setupVoices() {
@@ -91,7 +96,7 @@ void handleNoteEvent(byte channel, byte note, byte velocity) {
   } else {
     for (int i = 0; i < kNumPeriods; ++i) {
       if (currentNote[i] == note || currentNote[i] == 0) {
-        setPulseFromNoteNumber(i, note);
+        setPulseFromNoteNumber(i, note, velocity);
         break;
       }
     }
@@ -183,7 +188,7 @@ void sendVoices() {
       continue;
     }
     byte v = lastValue[i];
-    sum += v * voiceMaxAmplitude;
+    sum += v * voiceLevel[i];
     if (nowClock >= nextTrigger[i]) {
       nextTrigger[i] += halfPeriod[i]; 
       if (!v) {
