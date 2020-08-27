@@ -9,6 +9,7 @@ unsigned long nextTrigger[kNumPeriods];
 bool lastValue[kNumPeriods];
 unsigned char currentNote[kNumPeriods];
 unsigned long releaseTimeUs[kNumPeriods];
+byte voiceMaxAmplitude = 255 / kNumPeriods;
 
 void setPulseFromNoteNumber(int voice, int noteNumber) {
   float h = (noteNumber - 69.0)/12.0;
@@ -182,7 +183,7 @@ void sendVoices() {
       continue;
     }
     byte v = lastValue[i];
-    sum += v << 5;
+    sum += v * voiceMaxAmplitude;
     if (nowClock >= nextTrigger[i]) {
       nextTrigger[i] += halfPeriod[i]; 
       if (!v) {
