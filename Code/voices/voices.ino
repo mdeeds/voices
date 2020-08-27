@@ -6,6 +6,7 @@ unsigned long attackUs = 10000; // 0.010 seconds
 unsigned long decayUs = 10000;  // 0.010 seconds
 byte sustain = 255;
 unsigned long releaseUs = 500000; // Half a second.
+byte sensitivity = 0;  // 0 to 127
 
 unsigned long halfPeriod[kNumPeriods];
 unsigned long nextTrigger[kNumPeriods];
@@ -23,13 +24,14 @@ void setPulseFromNoteNumber(int voice, int noteNumber, byte velocity) {
   halfPeriod[voice] = periodMicros / 2;
   nextTrigger[voice] = micros() + periodMicros / 2;
   currentNote[voice] = noteNumber;
-  voiceLevel[voice] = ((int)voiceMaxAmplitude) * velocity / 127; 
+  // https://docs.google.com/spreadsheets/d/1jr34u8wYBd19wifZUzedr6Hz2aj2d3egbtnYYMyftjw/edit#gid=0
+  int amplitude = sensitivity + ((int)velocity * (127 - sensitivity)) / 127;
+  voiceLevel[voice] = amplitude * voiceMaxAmplitude / 127; 
 }
 
 void setupVoices() {
   pinMode(LED_BUILTIN, OUTPUT);  // AKA D13
-  digitalWrite(LED_BUILTIN, LOW);
-  
+  digitalWrite(LED_BUILTIN, LOW);  
   for (int i=0; i<kNumPeriods; ++i) {
     currentNote[i] = 0;
     halfPeriod[i] = 0;
