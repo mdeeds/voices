@@ -98,6 +98,7 @@ void handleNoteEvent(byte channel, byte note, byte velocity) {
   } else {
     for (int i = 0; i < kNumPeriods; ++i) {
       if (currentNote[i] == note || currentNote[i] == 0) {
+        releaseTimeUs[i] = kUlongMax;
         setPulseFromNoteNumber(i, note, velocity);
         break;
       }
