@@ -77,9 +77,9 @@ void setupAnalogOut() {
 
 // writes a byte to the Fast PWM channels (9 and 10)
 void setAnalogLevel(byte level){
-  sbi(TCCR1A, COM1A1);
+  sbi(TCCR1A, COM1A1);  // I think this may just need to be in setupAnalogOut() - Steve
   OCR1AL = level;
-  sbi(TCCR1A, COM1B1);
+  sbi(TCCR1A, COM1B1);  // Same here, although if it is writing it with a value it already contains, I can't see it would be a problem.  Just a couple of clock cycles. - Steve
   OCR1BL = level;
 }
 
